@@ -46,7 +46,7 @@ Tripify AI is a travel companion powered by on-device AI models and retrieval-au
 ## 🛠️ Local Setup
 
 ```bash
-git clone https://github.com/<amritesh-0>/tripify-ai.git
+git clone https://github.com/amritesh-0/tripify-ai.git
 cd tripify-ai
 npm install
 npx expo start
@@ -120,7 +120,7 @@ git push origin feature/your-feature
 For queries, collaborations, or early access:
 
 * 📧 Email: [amriteshkr0815@gmail.com](mailto:amriteshkr0815@gmail.com)
-* 🌐 Website: [tripify-ai](https://tripify-ai.netlify.com)
+* 🌐 Website: [tripify-ai](https://tripify-ai.netlify.app/)
 
 ---
 
