@@ -8,7 +8,7 @@ Tripify AI is a travel companion powered by on-device AI models and retrieval-au
 
 ## 🚀 Features
 
-* 🧠 **On-Device AI Chatbot** – Powered by Phi-3 Mini ONNX for fast and efficient local inference.
+* 🧠 **On-Device AI Chatbot** – Powered by ONNX model (onnx-distilgpt2)  for fast and efficient local inference.
 * 📆 **Modular Data Packages** – Download destination-specific RAG datasets (e.g., Leh-Ladakh) as needed.
 * 🧱 **Map Navigation** – Offline maps with smart route suggestions and landmarks.
 * 📍 **Nearby Itinerary Finder** – Discover activities, stays, and hidden spots around you.
@@ -25,7 +25,7 @@ Tripify AI is a travel companion powered by on-device AI models and retrieval-au
 2. **Download AI + Destination Package**
    On first launch, users are prompted to download:
 
-   * The Phi-3 Mini model (ONNX format)
+   * ONNX model (onnx-distilgpt2) 
    * A selected destination data pack (e.g., Leh-Ladakh JSON files for RAG)
 
 3. **Start Exploring Offline**
@@ -36,7 +36,7 @@ Tripify AI is a travel companion powered by on-device AI models and retrieval-au
 ## 🧠 Technology Stack
 
 * **Frontend:** React Native (Expo), Tailwind CSS
-* **AI Engine:** Phi-3 Mini ONNX (on-device inference)
+* **AI Engine:** ONNX model (onnx-distilgpt2)  (on-device inference)
 * **RAG System:** Local JSON document search & retrieval
 * **Navigation:** Offline map integration (e.g., MapLibre / OpenStreetMap)
 * **Deployment:** Netlify (Prototype frontend), GitHub, APK (soon)
