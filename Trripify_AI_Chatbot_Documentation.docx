@@ -1,0 +1,147 @@
+Trripify AI Chatbot: Architecture & Flow Documentation
+
+---
+
+**Overview**
+Trripify is an offline-first AI travel assistant for Ladakh, powered by an ONNX language model (onnx-distilgpt2), a Retrieval-Augmented Generation (RAG) knowledge base (rag.json), and a custom Byte Pair Encoding (BPE) tokenizer (using vocab.json and merges.txt). The app provides instant, context-aware answers to travel questions, blending factual FAQ responses with generative AI for open-ended queries.
+
+---
+
+1. App Flow: User Journey
+
+A. First Launch
+- Splash Screen: Checks if it’s the user’s first launch. Navigates to onboarding if so, otherwise to the main app.
+- Onboarding: Guides the user through app features.
+- Setup: Downloads the ONNX model zip (onnx-distilgpt2.zip) and RAG JSON (rag.json). Unzips and flattens the model directory. Saves model and RAG paths for later use.
+
+B. Main App
+- User lands on the main tab with options (AI Chat, Maps, Places, etc.).
+- Selecting “Ask AI” opens the chatbot.
+
+---
+
+2. Chatbot Flow: How a User Query is Handled
+
+A. User Sends a Message
+- The message is added to the chat history.
+- The app begins processing the input.
+
+B. Knowledge Retrieval (RAG)
+1. FAQ Search:
+   - The app searches the FAQ section of rag.json for a strong match to the user’s question.
+   - If a match is found, the FAQ answer is returned directly, with a friendly follow-up.
+2. Entity/Place Search:
+   - If no FAQ match, the app searches all other RAG data (places, passes, hotels, etc.) for a relevant entry (by name or description).
+   - If a match is found, its description (and name) is used as context for the model.
+
+C. Model Generation (onnx-distilgpt2)
+- If no FAQ match, the app builds a prompt:
+  - If entity context is found:
+    [CONTEXT]
+    {entity name}: {entity description}
+    Use the above information to answer the user's question in a helpful, conversational way.
+    User: {user question}
+    AI:
+  - If no context:
+    You are a helpful travel assistant for Ladakh. Answer concisely and accurately.
+    User: {user question}
+    AI:
+- The prompt is tokenized and passed to the ONNX model for generation.
+
+---
+
+3. Tokenizer: How It Works
+- On setup, the app loads vocab.json and merges.txt from the model directory.
+- The tokenizer uses Byte Pair Encoding (BPE) to convert text to token IDs and back, matching the model’s training.
+- For each prompt:
+  - The prompt is encoded to token IDs.
+  - The model generates new token IDs.
+  - The output is decoded back to text.
+
+---
+
+4. ONNX Model: Inference Logic
+- The ONNX model (onnx-distilgpt2) is loaded from the downloaded directory.
+- For each generation step:
+  - Inputs: input_ids, attention_mask, position_ids, and empty past_key_values (for all layers).
+  - The model outputs logits for the next token.
+  - The app selects the most likely token and repeats until an end-of-sequence token or max length is reached.
+- The generated tokens are decoded to produce the AI’s response.
+
+---
+
+5. RAG JSON: Structure
+- FAQ Section Example:
+  {
+    "id": "faq_permit_pangong",
+    "question": "Do I need a permit to visit Pangong Lake?",
+    "answer": "Yes, Indian nationals require an Inner Line Permit. Foreigners need a Protected Area Permit."
+  }
+- Entity/Place Section Example:
+  {
+    "id": "fotu_la_pass",
+    "name": "Fotu La Pass",
+    "type": "Mountain Pass",
+    "description": "Highest point on Srinagar-Leh highway at 4,108m, connecting through Zanskar Range.",
+    "coordinates": {"lat": 34.2200, "lng": 76.9000}
+  }
+
+---
+
+6. Decision Logic: How the App Chooses a Response
+1. FAQ Match: If a strong FAQ match is found, return the FAQ answer + a friendly follow-up (no model used).
+2. Entity/Place Match: If a relevant entity/place is found, use its description as context for the model.
+3. No Match: Use a general system prompt and let the model generate the answer.
+
+---
+
+7. Logging and Debugging
+- The app logs when the model is used for generation, including the prompt.
+- Errors and missing files are logged for debugging.
+
+---
+
+8. Extending the System
+- Add more FAQs or entities to rag.json for better coverage.
+- Use a robust tokenizer (WASM or HuggingFace port) for production.
+- Upgrade the model for better open-ended generation (if needed).
+- Add fallback messages for low-confidence or nonsensical model outputs.
+
+---
+
+9. Example End-to-End Flow
+User: “Are ATMs available in Leh-Ladakh?”
+- FAQ match found → returns:
+  “ATMs are available in Leh town, but carry cash for remote areas. Remember to carry cash for remote areas, as ATMs may be limited.”
+
+User: “Tell me about Fotu La Pass.”
+- No FAQ match, but entity match found → model prompt:
+  [CONTEXT]
+  Fotu La Pass: Highest point on Srinagar-Leh highway at 4,108m, connecting through Zanskar Range.
+  Use the above information to answer the user's question in a helpful, conversational way.
+  User: Tell me about Fotu La Pass.
+  AI:
+- Model generates a conversational answer using the context.
+
+---
+
+10. Key Files
+- app/(tabs)/chat.tsx — Main chat logic, prompt construction, RAG/model integration.
+- utils/tokenizer.ts — Loads and uses vocab.json/merges.txt for tokenization.
+- utils/onnxInference.ts — Handles ONNX model inference, input construction.
+- data/mockData.ts or rag.json — RAG knowledge base (FAQ + entities).
+- Model: onnx-distilgpt2 (ONNX format)
+- Tokenizer: Custom BPE (vocab.json, merges.txt)
+- RAG: rag.json
+
+---
+
+11. Best Practices
+- Keep your RAG JSON up to date for best factual coverage.
+- Use a robust tokenizer for production.
+- Log all model usage and errors for easy debugging.
+- Consider a hybrid approach (cloud LLM for open-ended, ONNX for offline/FAQ).
+
+---
+
+This documentation provides a full technical overview for developers and stakeholders to understand, maintain, and extend the Trripify AI chatbot system. 
