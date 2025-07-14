@@ -6,13 +6,14 @@ import DownloadItem from '@/components/DownloadItem';
 import { colors, fonts, sizes, spacing, borderRadius, shadows } from '@/constants/theme';
 import { User, Settings, CircleHelp as HelpCircle, Shield, Phone, Download, Moon, Bell } from 'lucide-react-native';
 import { downloadData } from '@/data/mockData';
-import { getModelPath, saveModelPath } from '@/utils/storage';
+import { getModelPath, saveModelPath, getRagPath, saveRagPath } from '@/utils/storage';
 import * as FileSystem from 'expo-file-system';
 import { unzip } from 'react-native-zip-archive';
 import * as Updates from 'expo-updates';
 import { router } from 'expo-router';
 
-const MODEL_ZIP_URL = 'https://firebasestorage.googleapis.com/v0/b/justixai.firebasestorage.app/o/phi3-model.zip?alt=media&token=7aa7483d-3546-4701-9d6d-6688636f0e08';
+const MODEL_ZIP_URL = 'https://firebasestorage.googleapis.com/v0/b/justixai.firebasestorage.app/o/onnx-distilgpt2.zip?alt=media&token=a99984c1-b6db-45c4-aca7-dc1523cb651f';
+const RAG_JSON_URL = 'https://firebasestorage.googleapis.com/v0/b/justixai.firebasestorage.app/o/JSON?alt=media&token=f8e2d29f-899d-489a-ae06-246a113c54b2';
 
 export default function ProfileScreen() {
   const [darkMode, setDarkMode] = useState(false);
@@ -20,12 +21,19 @@ export default function ProfileScreen() {
   const [autoUpdate, setAutoUpdate] = useState(true);
   const [modelStatus, setModelStatus] = useState<'installed' | 'available' | 'downloading'>('available');
   const [modelProgress, setModelProgress] = useState(0);
+  const [ragStatus, setRagStatus] = useState<'installed' | 'available' | 'downloading'>('available');
+  const [ragProgress, setRagProgress] = useState(0);
 
   useEffect(() => {
     (async () => {
-      const modelPath = await getModelPath();
-      const exists = modelPath && (await FileSystem.getInfoAsync(modelPath)).exists;
-      setModelStatus(exists ? 'installed' : 'available');
+      // Model status
+      const modelFile = FileSystem.documentDirectory + 'onnx-distilgpt2/model.onnx';
+      const modelExists = (await FileSystem.getInfoAsync(modelFile)).exists;
+      setModelStatus(modelExists ? 'installed' : 'available');
+      // RAG status
+      const ragFile = FileSystem.documentDirectory + 'rag.json';
+      const ragExists = (await FileSystem.getInfoAsync(ragFile)).exists;
+      setRagStatus(ragExists ? 'installed' : 'available');
     })();
   }, []);
 
@@ -55,12 +63,31 @@ export default function ProfileScreen() {
     try {
       setModelStatus('downloading');
       setModelProgress(0);
-      const zipPath = FileSystem.documentDirectory + 'phi3-mini.zip';
+      const zipPath = FileSystem.documentDirectory + 'onnx-distilgpt2.zip';
       await downloadWithProgress(MODEL_ZIP_URL, zipPath, setModelProgress);
-      const unzipDir = FileSystem.documentDirectory + 'phi3-model/';
-      const unzippedPath = await unzip(zipPath, unzipDir);
-      const modelPath = unzippedPath + '/phi3-mini.onnx';
-      await saveModelPath(modelPath);
+      const unzipDir = FileSystem.documentDirectory + 'onnx-distilgpt2/';
+      const zipPathForUnzip = zipPath.replace('file://', '');
+      const unzipDirForUnzip = unzipDir.replace('file://', '');
+      await unzip(zipPathForUnzip, unzipDirForUnzip);
+      // Flatten nested directory if present
+      const files = await FileSystem.readDirectoryAsync(unzipDir);
+      if (files.length === 1) {
+        const maybeNested = files[0];
+        const nestedDir = unzipDir + maybeNested + '/';
+        const nestedExists = (await FileSystem.getInfoAsync(nestedDir)).isDirectory;
+        if (nestedExists) {
+          const nestedFiles = await FileSystem.readDirectoryAsync(nestedDir);
+          for (const file of nestedFiles) {
+            await FileSystem.moveAsync({
+              from: nestedDir + file,
+              to: unzipDir + file,
+            });
+          }
+          await FileSystem.deleteAsync(nestedDir, { idempotent: true });
+        }
+      }
+      // Save the model directory path (not file path)
+      await saveModelPath(unzipDir);
       setModelStatus('installed');
       setModelProgress(1);
       Alert.alert('Success', 'Model downloaded and installed!');
@@ -68,6 +95,26 @@ export default function ProfileScreen() {
       setModelStatus('available');
       setModelProgress(0);
       Alert.alert('Error', 'Failed to download model. Please try again.');
+    }
+  };
+
+  const handleRagDownload = async () => {
+    try {
+      setRagStatus('downloading');
+      setRagProgress(0);
+      const ragPath = FileSystem.documentDirectory + 'rag.json';
+      await downloadWithProgress(RAG_JSON_URL, ragPath, setRagProgress);
+      // Confirm file exists before saving path
+      const ragExists = (await FileSystem.getInfoAsync(ragPath)).exists;
+      if (!ragExists) throw new Error('RAG file not found after download.');
+      await saveRagPath(ragPath);
+      setRagStatus('installed');
+      setRagProgress(1);
+      Alert.alert('Success', 'Knowledge base downloaded!');
+    } catch (e) {
+      setRagStatus('available');
+      setRagProgress(0);
+      Alert.alert('Error', 'Failed to download knowledge base. Please try again.');
     }
   };
 
@@ -174,8 +221,8 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>AI Model Status</Text>
           {modelStatus !== 'installed' ? (
             <DownloadItem
-              name="Phi-3 Mini (ONNX)"
-              size="250MB"
+              name="onnx-distilgpt2 (ONNX)"
+              size="500MB"
               description="Offline AI model for travel assistance."
               status={modelStatus}
               progress={modelProgress}
@@ -185,12 +232,38 @@ export default function ProfileScreen() {
             <View style={styles.aiStatusCard}>
               <View style={styles.statusIndicator} />
               <View style={styles.aiContent}>
-                <Text style={styles.aiTitle}>Phi-3 Mini (ONNX)</Text>
+                <Text style={styles.aiTitle}>onnx-distilgpt2 (ONNX)</Text>
                 <Text style={styles.aiDescription}>
                   Installed and ready
                 </Text>
                 <Text style={styles.aiDetails}>
-                  Model size: 250MB • Offline capability: ✓
+                  Model size: 500MB • Offline capability: ✓
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Knowledge Base (RAG) Status</Text>
+          {ragStatus !== 'installed' ? (
+            <DownloadItem
+              name="Leh-Ladakh RAG Data"
+              size="5MB"
+              description="Knowledge base for Ladakh travel queries."
+              status={ragStatus}
+              progress={ragProgress}
+              onPress={handleRagDownload}
+            />
+          ) : (
+            <View style={styles.aiStatusCard}>
+              <View style={styles.statusIndicator} />
+              <View style={styles.aiContent}>
+                <Text style={styles.aiTitle}>Leh-Ladakh RAG Data</Text>
+                <Text style={styles.aiDescription}>
+                  Installed and ready
+                </Text>
+                <Text style={styles.aiDetails}>
+                  Data size: 5MB • Offline capability: ✓
                 </Text>
               </View>
             </View>
@@ -224,7 +297,7 @@ export default function ProfileScreen() {
               ]);
             }}
           >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Reset Onboarding (Debug)</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Reset App Data (if any issues)</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

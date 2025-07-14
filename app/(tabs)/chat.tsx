@@ -153,7 +153,17 @@ export default function ChatScreen() {
       let aiText = tokenizer.decode(inputIds.slice(tokenizer.encode(prompt).length));
       // Post-process: trim repeated output
       aiText = aiText.replace(/(.+?)\1+/, '$1'); // crude repeat trimmer
-      aiText = aiText.split("\n")[0]; // take only the first line/sentence
+      aiText = aiText.split("\n")[0];
+
+      // Fallback: if model output is empty, too short, or repeats the question, return a greeting
+      if (
+        !aiText ||
+        aiText.trim().length < 3 ||
+        aiText.toLowerCase().includes(text.trim().toLowerCase())
+      ) {
+        aiText = "Hello! I'm your AI travel assistant. How can I help you plan your trip or answer questions about Ladakh?";
+      }
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         text: aiText,

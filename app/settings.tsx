@@ -9,10 +9,19 @@ export default function SettingsScreen() {
   const deleteModelAndRag = async () => {
     setDeleting(true);
     try {
-      const modelPath = await getModelPath();
-      const ragPath = await getRagPath();
-      if (modelPath) await FileSystem.deleteAsync(modelPath, { idempotent: true });
-      if (ragPath) await FileSystem.deleteAsync(ragPath, { idempotent: true });
+      // Delete model.onnx and its directory
+      const modelDir = FileSystem.documentDirectory + 'onnx-distilgpt2/';
+      const modelFile = modelDir + 'model.onnx';
+      const modelExists = (await FileSystem.getInfoAsync(modelFile)).exists;
+      if (modelExists) {
+        await FileSystem.deleteAsync(modelDir, { idempotent: true });
+      }
+      // Delete rag.json
+      const ragFile = FileSystem.documentDirectory + 'rag.json';
+      const ragExists = (await FileSystem.getInfoAsync(ragFile)).exists;
+      if (ragExists) {
+        await FileSystem.deleteAsync(ragFile, { idempotent: true });
+      }
       await storage.removeItem('phi3_model_path');
       await storage.removeItem('rag_json_path');
       Alert.alert('Success', 'Model and knowledge base deleted. Please restart setup.');
