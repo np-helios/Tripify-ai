@@ -119,7 +119,6 @@ git push origin feature/your-feature
 
 For queries, collaborations, or early access:
 
-* 📧 Email: [amriteshkr0815@gmail.com](mailto:amriteshkr0815@gmail.com)
 * 🌐 Website: [tripify-ai](https://tripify-ai.netlify.app/)
 
 ---
