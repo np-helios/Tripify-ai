@@ -129,4 +129,4 @@ MIT License. See `LICENSE` for details.
 
 ---
 
-> Built with ❤️ by [Amritesh Kumar](https://github.com/amritesh-0) and the Tripify AI team - Nishtha Pandey and Nitu Dudi. 
+> Built with ❤️ by [Amritesh Kumar](https://github.com/amritesh-0) and the Tripify AI team - [Nishtha Pandey](np-helios) and Nitu Dudi. 
